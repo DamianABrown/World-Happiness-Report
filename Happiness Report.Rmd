@@ -1,17 +1,55 @@
-remove(list = ls())
+---
+title: "Happiness Report"
+author: "Damian Brown"
+date: "10/27/2020"
+output: html_document
+---
 
-#Loading tidyverse for tidying data as well as using for ggplot
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(knitr)
+```
 
+## World Happiness Report
 
+This data was collected from Kaggle. This data is a report of happiness measurements from different countries around the world. There are mulitple variables that were collected from each country such as 'Happines Score', "Life Expectancy', 'Trust of Government', and more. There are a total of 5 dataset, each being a different year; 2015, 2016, 2017, 2018, 2019.
+
+In this project I plan to import the data files, tidy the data, and combine all data into one main dataset. From that final dataset I will graph a few portions of the data.
+
+In the end I will produce graphs to provide more intuition behind the data.
+
+---
+```{r import data, echo = FALSE}
 #Importing data from csv file on local device
 data.2015 <- read.csv('C:/Users/damia/Desktop/Random_Projects/Kaggle Datasets/Happiness Data/2015.csv')
 data.2016 <- read.csv('C:/Users/damia/Desktop/Random_Projects/Kaggle Datasets/Happiness Data/2016.csv')
 data.2017 <- read.csv('C:/Users/damia/Desktop/Random_Projects/Kaggle Datasets/Happiness Data/2017.csv')
 data.2018 <- read.csv('C:/Users/damia/Desktop/Random_Projects/Kaggle Datasets/Happiness Data/2018.csv')
 data.2019 <- read.csv('C:/Users/damia/Desktop/Random_Projects/Kaggle Datasets/Happiness Data/2019.csv')
+```
+
+### Happiness Data 2015 Report
+```{r, echo = FALSE}
+kable(head(data.2015))
+```
+---
+```{r, echo = FALSE}
+kable(summary(data.2015))
+```
+
+The first table is a view of the first five observations in the data. We can see that this data is primarily numeric with only two variables being character vectors. We can confirm this belief by viewing the summary of the data as we did with the second table.
+
+Without showing the other 4 tables for the remaining dataset I can say that the other tables follow the same structure with a minor exception that we will see later.
+
+The main difference between each dataset is the name of each column and the order in which the variables are listed. There are a few "extra" columns that we can deem unecessary for this project.
 
 
+### Data Cleaning
+
+My first steps for cleaning this data will be to create new datasets that contain only the variables we are interested in. Next I will add a column to each dataset with the year of the observations so that when we combine all of the dataset together we can distinguish each observation from the other. Following that I will organize the variables into a determined order and then rename each column for uniformity.
+
+```{r cleaning, echo = FALSE}
 #Creating new dataset with only varialbes desired without altering original data
 new.data.2015 <- data.2015 %>% subset(select = c(Country, Region, Happiness.Rank, Happiness.Score, 
                                                  Economy..GDP.per.Capita., Health..Life.Expectancy., 
@@ -29,7 +67,6 @@ new.data.2019 <- data.2019 %>% subset(select = c(Country.or.region, Overall.rank
                                                  Healthy.life.expectancy, Perceptions.of.corruption, 
                                                  Generosity, Freedom.to.make.life.choices))
 
-
 #Adding new column to each dataset for year observations were obtained
 new.data.2015 <- new.data.2015 %>% add_column(Year = 2015)
 new.data.2016 <- new.data.2016 %>% add_column(Year = 2016)
@@ -37,14 +74,12 @@ new.data.2017 <- new.data.2017 %>% add_column(Year = 2017)
 new.data.2018 <- new.data.2018 %>% add_column(Year = 2018)
 new.data.2019 <- new.data.2019 %>% add_column(Year = 2019)
 
-
 #Organizing columns in order desired
 new.data.2015 <- new.data.2015 %>% subset(select = c(1, 2, 10, 3, 4, 6, 5, 8, 9, 7))
 new.data.2016 <- new.data.2016 %>% subset(select = c(1, 2, 10, 3, 4, 6, 5, 8, 9, 7))
 new.data.2017 <- new.data.2017 %>% subset(select = c(1, 9, 2, 3, 5, 4, 7, 8, 6))
 new.data.2018 <- new.data.2018 %>% subset(select = c(1, 9, 2, 3, 5, 4, 7, 8, 6))
 new.data.2019 <- new.data.2019 %>% subset(select = c(1, 9, 2, 3, 5, 4, 7, 8, 6))
-
 
 #Creating uniform variable names for each column across datasets
 colnames(new.data.2015) <- c('Country', 'Region', 'Year', 'Happiness Ranking', 'Happiness Score',
@@ -62,51 +97,95 @@ colnames(new.data.2018) <- c('Country', 'Year', 'Happiness Ranking', 'Happiness 
 colnames(new.data.2019) <- c('Country', 'Year', 'Happiness Ranking', 'Happiness Score',
                              'Life Expectancy', 'GDP per Capita', 'Generosity',
                              'Freedom', 'Trust in Government')
+```
+---
+```{r, echo=FALSE}
+kable(head(new.data.2015))
+```
 
+This data is looking fairly good to start considering combining them together for the main and final dataset, however there is a pretty big discrepancy. Can you spot it?
 
+Below is a protion for the 2019 Happiness Report Dataset
+
+```{r, echo=FALSE}
+kable(head(new.data.2019))
+```
+
+It turns out that 2017, 2018, and 2019 are missing the variable 'Region'. This is, in my opinion, a major variable that is needed for every observation in the final dataset.
+
+```{r insert region, echo=FALSE, warning=FALSE}
 #Creating temperary list to use for assigning countries to region
 temp.region.list <- new.data.2015[,c(1,2)]
-
 
 #Inputting region into dataset that are missing value
 new.data.2017 <- left_join(temp.region.list, new.data.2017)
 new.data.2018 <- left_join(temp.region.list, new.data.2018)
 new.data.2019 <- left_join(temp.region.list, new.data.2019)
 remove(temp.region.list)
+```
 
+Now we can see that the Region has been added to the datasets and we can start working to combine them all into one. First let's check the summary of each dataset to ensure each variable is the same datatype.
 
-#Checking data values for each dataset before combining all sets together
-summary(new.data.2015)
-summary(new.data.2016)
-summary(new.data.2017)
-summary(new.data.2018) #Trust in government not numeric value, must change before combining
-summary(new.data.2019)
+```{r, echo=FALSE}
+kable(summary(new.data.2018))
+```
 
+As mentioned before the 2018 dataset has become a problem that needs to be addressed. Currently the datatype for the 'Trust in Government' is character. This will prevent us from combining the data so we much correct this first. I will exctract the vector, change the vector to a numeric value, and then insert the vector back into the dataset.
 
-#Converting new.data.2018 "Trust in Government" variable into a numeric value, instead of factor
+```{r , echo=FALSE, message=FALSE, warning=FALSE}
+#Changing datatype in vector from character to numeric
 trust.in.gov <- new.data.2018[,10]
 trust.in.gov <- as.character(trust.in.gov)
 trust.in.gov <- as.numeric(trust.in.gov)
 new.data.2018[,10] <- trust.in.gov
-summary(new.data.2018)
 remove(trust.in.gov)
+```
 
+---
 
+We can see that the datatype for 'Trust in Government' has been changed to a numeric value.
+
+```{r, echo = FALSE}
+kable(summary(new.data.2018))
+```
+
+---
+
+Now it is time to combine all of the dataset together to make the final dataset with all of the observations from each year.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #Building final dataset with all vaiables and observations from each year
 happiness.dataset <- bind_rows(new.data.2015, new.data.2016, new.data.2017, new.data.2018, new.data.2019)
+```
 
+This is great, we have the final dataset and we should be ready for Visualization and Analysis. Before we jump into the fun stuff let's do a check to see if the data is tidy.
 
+A quick look at a couple observations of the data and a summary check should be enough to tell us if we are tidy or not.
+
+```{r, echo = FALSE}
+#Checking data through head() and summary
+kable(head(arrange(happiness.dataset, (happiness.dataset$`Happiness Ranking`))))
+kable(summary(happiness.dataset))
+```
+
+We can see that there are some NA values throughout the dataset. I am making an assumtion that these NA's are 'connected' meaning if one row has and NA in one varialbe then the entire row is probably NA as well.
+
+I am first going to remove the observations with NA in the year column because if we don't know which year the observation is from then we can run accurate analysis later on. After running the code we will see that this removed all of the NA's except for one, which is in the 'Trust the Goverenment' column. I will simple drop this row.
+
+```{r, echo = FALSE}
 #Clean data to remove NA's
-summary(happiness.dataset)
 happiness.dataset <- happiness.dataset %>% subset(!is.na(Year))
-summary(happiness.dataset)
 happiness.dataset <- happiness.dataset %>% subset(!is.na(`Trust in Government`))
-summary(happiness.dataset)
+kable(summary(happiness.dataset))
+```
 
-###
-#Data Visualization
-###
+Now we have clean and tidy data that can be analysed.
 
+### Data Visualization
+
+Here are a few ggplot's that give an overall idea of how the data is layed out.
+
+```{r plots, echo = FALSE, message=FALSE, warning=FALSE}
 #Plotting Happiness Score based on region for each individual year
 ggplot(happiness.dataset) + geom_boxplot(aes(x = (Region),
                                              y = (`Happiness Score`), color = Region)) + 
@@ -128,25 +207,32 @@ ggplot(temp.data, aes(x = Region, y = Ave)) + geom_col(aes(color = Ave, fill = A
   coord_flip() + facet_wrap(~Year) + labs(y = "Life Expactancy", x = "Region", title = "Life Expectancy by Region")
 
 remove(temp.date)
+```
 
-###
-#Data Exploration
-###
+### Data Exploration
 
+Correlation between Happiness Score and Life Expectancy
+```{r, echo = FALSE}
 #Correlation between happiness and life expectancy
 cor(happiness.dataset$`Happiness Score`, happiness.dataset$`Life Expectancy`)
+```
 
-
+```{r, echo=FALSE}
 #Linear Regression happiness score and life expectancy
 slr <- lm(`Happiness Score` ~ `Life Expectancy`, happiness.dataset)
 summary(slr)
 remove(slr)
+```
 
+Correlation between Freedom and Trust in Government
+```{r, echo=FALSE}
 #Correlation between Freedom and life Trust in Government
 cor(happiness.dataset$Freedom, happiness.dataset$`Trust in Government`)
+```
 
-
+```{r, echo = FALSE}
 #Linear Regression Freedom and Trust in Government
 slr <- lm(`Freedom` ~ `Trust in Government`, happiness.dataset)
 summary(slr)
 remove(slr)
+```
